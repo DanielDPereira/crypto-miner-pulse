@@ -7,102 +7,153 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
-
+  
   <link rel="apple-touch-icon" sizes="180x180" href="./favicon_io/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon_io/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="./favicon_io/favicon-16x16.png">
   <link rel="manifest" href="./favicon_io/site.webmanifest">
-
 </head>
-<body class="bg-gray-900 text-white p-6 font-sans">
+<body class="bg-gray-950 text-white font-sans antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
 
-  <div id="connectionError" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" style="display: none;">
-    <div class="bg-gray-800 p-8 rounded-2xl text-center shadow-lg border border-red-500">
-      <h2 class="text-2xl font-bold text-red-400 mb-2">Erro de Conexão</h2>
-      <p class="text-gray-300">Não foi possível conectar à API do XMRig.</p>
-    </div>
+  <div class="fixed inset-0 z-0 pointer-events-none">
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
   </div>
 
-  <header class="text-center mb-8">
-    <h1 class="text-3xl font-bold">Crypto Miner Pulse ⚡</h1>
-    <p class="text-md text-gray-400 mt-1">O dashboard inteligente do seu garimpo digital.</p>
-  </header>
-  
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6">
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Status</p>
-      <p id="status" class="text-xl font-bold flex items-center justify-center"><span class="status-dot status-error"></span>Offline</p>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Hashrate (10s)</p>
-      <p id="hashrate10s" class="text-xl font-bold">0 H/s</p>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Shares Aceitos</p>
-      <p id="sharesGood" class="text-xl font-bold">0</p>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Shares Rejeitados</p>
-      <p id="sharesRejected" class="text-xl font-bold text-red-400">0</p>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Pico de Hashrate</p>
-      <p id="hashrateHighest" class="text-xl font-bold">0 H/s</p>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Dificuldade</p>
-      <p id="diff" class="text-xl font-bold">0</p>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Tempo Médio (Share)</p>
-      <p id="avgTime" class="text-xl font-bold">-</p>
-    </div>
-    <div class="bg-gray-800 p-4 rounded-2xl shadow">
-      <p class="text-sm text-gray-400">Uptime</p>
-      <p id="uptime" class="text-xl font-bold">0s</p>
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-    <div class="lg:col-span-2 bg-gray-800 p-4 rounded-2xl flex flex-col h-96">
-      <h2 class="text-lg mb-2">Evolução do Hashrate</h2>
-      <div class="relative flex-grow">
-        <canvas id="hashrateChart"></canvas>
+  <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center transition-opacity opacity-0">
+    <div class="glass-panel p-6 w-full max-w-md m-4 transform scale-95 transition-transform duration-300">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-emerald-400">Configurações</h2>
+        <button id="closeSettings" class="text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">API URL</label>
+          <input type="text" id="apiUrlInput" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 focus:border-emerald-500 focus:outline-none" placeholder="http://127.0.0.1:20100/2/summary">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">Intervalo (ms)</label>
+          <input type="number" id="refreshRateInput" class="w-full bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 focus:border-emerald-500 focus:outline-none" value="3000">
+        </div>
+        <button id="clearHistoryBtn" class="w-full py-2 px-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm transition-all">Limpar Histórico</button>
+        <button id="saveSettingsBtn" class="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium shadow-lg shadow-emerald-900/20 transition-all mt-2">Salvar</button>
       </div>
     </div>
-    <div class="bg-gray-800 p-4 rounded-2xl flex flex-col h-96">
-      <h2 class="text-lg text-center mb-2">Distribuição de Shares</h2>
-      <div class="relative flex-grow flex items-center justify-center">
-        <div class="relative w-64 h-64"> 
-          <canvas id="sharesPie"></canvas>
+  </div>
+
+  <div class="relative z-10 max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+    
+    <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <div class="absolute inset-0 bg-emerald-500 blur opacity-20 animate-pulse"></div>
+          <img src="./favicon_io/android-chrome-192x192.png" class="w-12 h-12 relative z-10 rounded-xl shadow-lg" alt="Logo">
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">Crypto Miner Pulse</h1>
+          <p class="text-xs text-gray-400 uppercase tracking-widest font-semibold">O dashboard do seu garimpo digital.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="statusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-800/50 border border-gray-700 backdrop-blur-md">
+          <span class="status-dot animate-pulse"></span>
+          <span id="statusText" class="text-sm font-medium">A conectar...</span>
+        </div>
+        <button id="openSettings" class="p-2 bg-gray-800/50 hover:bg-gray-700 border border-gray-700 rounded-full transition-all text-gray-300 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </button>
+      </div>
+    </header>
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="glass-panel p-4 flex flex-col justify-between group hover:border-emerald-500/30 transition-colors">
+        <p class="text-xs text-gray-400 font-medium uppercase">Hashrate (10s)</p>
+        <p id="hashrate10s" class="text-2xl lg:text-3xl font-bold text-white tracking-tight">0 H/s</p>
+      </div>
+      <div class="glass-panel p-4 flex flex-col justify-between group hover:border-emerald-500/30 transition-colors">
+        <p class="text-xs text-gray-400 font-medium uppercase">Shares Aceitos</p>
+        <p id="sharesGood" class="text-2xl lg:text-3xl font-bold text-white tracking-tight">0</p>
+      </div>
+      <div class="glass-panel p-4 flex flex-col justify-between group hover:border-red-500/30 transition-colors">
+        <p class="text-xs text-gray-400 font-medium uppercase">Rejeitados</p>
+        <p id="sharesRejected" class="text-2xl lg:text-3xl font-bold text-red-400 tracking-tight">0</p>
+      </div>
+      <div class="glass-panel p-4 flex flex-col justify-between group hover:border-emerald-500/30 transition-colors">
+        <p class="text-xs text-gray-400 font-medium uppercase">Uptime</p>
+        <p id="uptime" class="text-xl font-bold text-white tracking-tight">0s</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      
+      <div class="glass-panel p-5 rounded-2xl flex flex-col h-[420px] lg:col-span-2">
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            Evolução do Hashrate
+          </h2>
+          
+          <div class="flex items-center gap-2 text-xs">
+            <button onclick="toggleDataset(0)" id="btn-10s" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30 transition-all active-toggle">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 10s
+            </button>
+            <button onclick="toggleDataset(1)" id="btn-60s" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/50 text-blue-400 hover:bg-blue-500/30 transition-all active-toggle">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span> 60s
+            </button>
+            <button onclick="toggleDataset(2)" id="btn-15m" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/50 text-purple-400 hover:bg-purple-500/30 transition-all active-toggle">
+              <span class="w-2 h-2 rounded-full bg-purple-500"></span> 15m
+            </button>
+          </div>
+        </div>
+        <div class="relative flex-grow w-full h-full">
+          <canvas id="hashrateChart"></canvas>
+        </div>
+      </div>
+      
+      <div class="glass-panel p-5 rounded-2xl flex flex-col h-[420px]">
+        <h2 class="text-lg font-bold mb-4 text-center">Distribuição de Shares</h2>
+        <div class="relative flex-grow flex items-center justify-center">
+          <div class="relative w-full h-full max-h-[250px] flex justify-center"> 
+            <canvas id="sharesPie"></canvas>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-4 text-center">
+             <div class="bg-gray-800/50 p-2 rounded-lg">
+                <p class="text-xs text-gray-500">Total</p>
+                <p id="totalSharesLabel" class="text-lg font-bold text-white">0</p>
+             </div>
+             <div class="bg-gray-800/50 p-2 rounded-lg">
+                <p class="text-xs text-gray-500">Diff</p>
+                <p id="diff" class="text-lg font-bold text-blue-400">0</p>
+             </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="bg-gray-800 p-4 rounded-2xl flex flex-col h-96 mb-6">
-    <h2 class="text-lg mb-2">Evolução dos Shares</h2>
-    <div class="relative flex-grow">
-      <canvas id="sharesHistoryChart"></canvas>
+    <div class="glass-panel p-5 rounded-2xl mb-6 h-[300px] flex flex-col">
+        <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Evolução dos Shares
+        </h2>
+        <div class="relative flex-grow w-full">
+            <canvas id="sharesHistoryChart"></canvas>
+        </div>
     </div>
-  </div>
 
-  <div class="bg-gray-800 p-4 rounded-2xl">
-    <h2 class="text-lg mb-2">Estação de Mineração</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div><strong class="text-gray-400">Worker ID:</strong> <span id="workerId">-</span></div>
-        <div><strong class="text-gray-400">CPU:</strong> <span id="cpuBrand">-</span></div>
-        <div><strong class="text-gray-400">Threads:</strong> <span id="cpuThreads">-</span></div>
-        <div><strong class="text-gray-400">Algoritmo:</strong> <span id="algo">-</span></div>
-        <div><strong class="text-gray-400">Pool:</strong> <span id="pool">-</span></div>
-        <div><strong class="text-gray-400">Ping:</strong> <span id="ping">-</span> ms</div>
-        <div><strong class="text-gray-400">Versão XMRig:</strong> <span id="version">-</span></div>
+    <div class="glass-panel p-6 rounded-2xl mb-8">
+      <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-800 pb-2">Estação de Mineração</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-8 text-sm">
+          <div><p class="text-gray-500 text-xs mb-1">Worker ID</p><p id="workerId" class="font-mono text-white truncate">-</p></div>
+          <div><p class="text-gray-500 text-xs mb-1">Algoritmo</p><p id="algo" class="font-mono text-yellow-400">-</p></div>
+          <div><p class="text-gray-500 text-xs mb-1">Pool</p><p id="pool" class="font-mono text-blue-400 truncate">-</p></div>
+          <div><p class="text-gray-500 text-xs mb-1">Ping</p><p id="ping" class="font-mono text-purple-400">-</p></div>
+      </div>
     </div>
-  </div>
 
-  <footer class="text-center mt-8 text-sm text-gray-500">
-    <p>Feito por <a class="underline decoration-dotted hover:no-underline hover:text-gray-300" href="https://danieldpereira.github.io/danieldias.py/" target="_blank">Daniel Dias Pereira</a> © 2025.</p>
-  </footer>
+    <footer class="text-center text-sm text-gray-600 pb-4">
+      <p>Desenvolvido por <a class="text-emerald-500 hover:text-emerald-400" href="https://danieldpereira.github.io/danieldias.py/" target="_blank">Daniel Dias Pereira</a></p>
+    </footer>
+  </div>
 
   <script src="script.js"></script>
 </body>
