@@ -1,5 +1,5 @@
-const STORAGE_KEY_SETTINGS = 'DanielDPereira';
-const STORAGE_KEY_DATA = 'DanielDPereira';
+const STORAGE_KEY_SETTINGS = 'DDP_CryptoMinerPulseSettings_1';
+const STORAGE_KEY_DATA = 'DDP_CryptoMinerPulseData_1';
 const MAX_DATA_POINTS = 60;
 const SHARES_UPDATE_INTERVAL = 3 * 60 * 1000;
 
@@ -248,19 +248,51 @@ async function fetchData() {
         const sGood = json.results?.shares_good || 0;
         const sTotal = json.results?.shares_total || 0;
         const sBad = sTotal - sGood;
+        const sAvgTime = json.results?.avg_time || 0; 
         
         // Atualizar Textos
         document.getElementById('hashrate10s').textContent = formatHashrate(hrArray[0]);
         document.getElementById('sharesGood').textContent = sGood.toLocaleString();
         document.getElementById('sharesRejected').textContent = sBad.toLocaleString();
+        document.getElementById('avgShareTime').textContent = sAvgTime + 's';
         document.getElementById('uptime').textContent = formatUptime(json.uptime);
         document.getElementById('diff').textContent = (json.results?.diff_current || 0).toLocaleString();
         document.getElementById('totalSharesLabel').textContent = sTotal.toLocaleString();
         
+        // --- Atualizações da Estação de Mineração ---
+        
+        // 1. Worker ID e Algo
         document.getElementById('workerId').textContent = json.worker_id || '-';
         document.getElementById('algo').textContent = json.algo || '-';
+        
+        // 2. CPU Brand (Novo)
+        const cpuBrand = json.cpu?.brand || '-';
+        const cpuEl = document.getElementById('cpuBrand');
+        cpuEl.textContent = cpuBrand;
+        cpuEl.title = cpuBrand; // Tooltip caso o nome seja muito longo
+
+        // 3. Pool e Ping
         document.getElementById('pool').textContent = json.connection?.pool || '-';
         document.getElementById('ping').textContent = (json.connection?.ping || 0) + ' ms';
+        
+        // 4. Huge Pages (Novo)
+        const hp = json.hugepages || [0, 0];
+        const hpUsed = hp[0];
+        const hpTotal = hp[1];
+        const hpEl = document.getElementById('hugePages');
+        
+        // Lógica de Status Huge Pages
+        if (hpTotal > 0 && hpUsed === hpTotal) {
+            hpEl.textContent = `${hpUsed}/${hpTotal} (100%)`;
+            hpEl.className = 'font-mono text-emerald-400';
+        } else if (hpTotal > 0) {
+            const pct = ((hpUsed / hpTotal) * 100).toFixed(1);
+            hpEl.textContent = `${hpUsed}/${hpTotal} (${pct}%)`;
+            hpEl.className = 'font-mono text-yellow-400';
+        } else {
+            hpEl.textContent = 'Não disponível';
+            hpEl.className = 'font-mono text-red-400';
+        }
 
         const now = new Date().toLocaleTimeString('pt-BR');
 
