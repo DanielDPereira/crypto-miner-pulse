@@ -1,6 +1,7 @@
 const STORAGE_KEY_SETTINGS = 'DDP_CryptoMinerPulseSettings_1';
 const STORAGE_KEY_DATA = 'DDP_CryptoMinerPulseData_1';
 const STORAGE_KEY_EXPORT = 'DDP_CryptoMinerPulseExport_1';
+const STORAGE_KEY_LANGUAGE = 'DDP_CryptoMinerPulseLang_1';
 const MAX_DATA_POINTS = 60;
 const SHARES_UPDATE_INTERVAL = 3 * 60 * 1000;
 
@@ -8,6 +9,113 @@ let settings = {
     apiUrl: 'http://127.0.0.1:20100/2/summary',
     refreshInterval: 3000
 };
+
+const DEFAULT_LANG = 'pt-BR';
+const translations = {
+    'pt-BR': {
+        settingsTitle: 'Configurações',
+        apiUrlLabel: 'API URL',
+        refreshIntervalLabel: 'Intervalo de atualização (ms)',
+        clearHistory: 'Limpar Histórico',
+        save: 'Salvar',
+        tagline: 'O dashboard do seu garimpo digital.',
+        statusConnecting: 'A conectar...',
+        statusOnline: 'Online',
+        statusOffline: 'Offline',
+        exportCsv: 'Exportar CSV',
+        languageToggle: 'EN',
+        hashrate10sCard: 'Hashrate (10s)',
+        hashrate10sTooltip: 'Velocidade atual. Indica quantos cálculos seu PC faz por segundo. Quanto maior, melhor.',
+        sharesAccepted: 'Shares Aceitos',
+        sharesAcceptedTooltip: 'Trabalhos válidos entregues. São eles que confirmam seu esforço e geram sua recompensa.',
+        sharesRejected: 'Rejeitados',
+        sharesRejectedTooltip: 'Trabalhos inválidos. Geralmente causados por internet ruim ou configuração errada. Desperdício de energia.',
+        avgShareTime: 'Tempo Médio Share',
+        avgShareTimeTooltip: 'Tempo médio para seu PC encontrar uma solução. Máquinas mais rápidas têm tempos menores.',
+        uptimeLabel: 'Uptime',
+        uptimeTooltip: 'Tempo total que o minerador está rodando sem desligar ou travar.',
+        hashrateEvolution: 'Evolução do Hashrate',
+        sharesDistribution: 'Distribuição de Shares',
+        totalLabel: 'Total',
+        diffLabel: 'Diff',
+        diffTooltip: 'Dificuldade. Define o quão difícil é resolver o problema matemático atual.',
+        sharesEvolution: 'Evolução dos Shares',
+        miningStation: 'Estação de Mineração',
+        workerIdLabel: 'Worker ID',
+        workerIdTooltip: 'Nome que identifica esta máquina na sua conta ou na Pool de mineração.',
+        cpuLabel: 'CPU',
+        cpuTooltip: 'Modelo do processador que está realizando o trabalho de mineração.',
+        algoLabel: 'Algoritmo',
+        algoTooltip: 'A fórmula matemática específica usada para minerar esta moeda (ex: rx/0 para Monero).',
+        poolLabel: 'Pool',
+        poolTooltip: 'Servidor coletivo onde vários mineradores se unem para aumentar a frequência de ganhos.',
+        pingLabel: 'Ping',
+        pingTooltip: 'Latência da conexão. Tempo de resposta entre você e a Pool. Quanto menor, melhor.',
+        hugePagesLabel: 'Huge Pages',
+        hugePagesTooltip: 'Otimização de memória avançada. Se estiver 100%, sua velocidade de mineração aumenta muito.',
+        footerBy: 'Desenvolvido por',
+        exportEmptyAlert: 'Nenhuma leitura disponível para exportar.',
+        notAvailable: 'Não disponível',
+        hashrate10sDataset: 'Hashrate (10s)',
+        hashrate60sDataset: 'Hashrate (60s)',
+        hashrate15mDataset: 'Hashrate (15m)',
+        sharesAcceptedDataset: 'Aceitos',
+        sharesTotalDataset: 'Totais'
+    },
+    'en-US': {
+        settingsTitle: 'Settings',
+        apiUrlLabel: 'API URL',
+        refreshIntervalLabel: 'Refresh interval (ms)',
+        clearHistory: 'Clear History',
+        save: 'Save',
+        tagline: 'Your digital mining dashboard.',
+        statusConnecting: 'Connecting...',
+        statusOnline: 'Online',
+        statusOffline: 'Offline',
+        exportCsv: 'Export CSV',
+        languageToggle: 'PT',
+        hashrate10sCard: 'Hashrate (10s)',
+        hashrate10sTooltip: 'Current speed. Shows how many calculations your PC does per second. Higher is better.',
+        sharesAccepted: 'Accepted Shares',
+        sharesAcceptedTooltip: 'Valid jobs delivered. They confirm your effort and generate your reward.',
+        sharesRejected: 'Rejected',
+        sharesRejectedTooltip: 'Invalid jobs. Usually caused by poor internet or wrong settings. Wasted energy.',
+        avgShareTime: 'Avg Share Time',
+        avgShareTimeTooltip: 'Average time for your PC to find a solution. Faster machines have lower times.',
+        uptimeLabel: 'Uptime',
+        uptimeTooltip: 'Total time the miner has been running without stopping or crashing.',
+        hashrateEvolution: 'Hashrate Evolution',
+        sharesDistribution: 'Share Distribution',
+        totalLabel: 'Total',
+        diffLabel: 'Diff',
+        diffTooltip: 'Difficulty. Defines how hard it is to solve the current math problem.',
+        sharesEvolution: 'Shares Evolution',
+        miningStation: 'Mining Station',
+        workerIdLabel: 'Worker ID',
+        workerIdTooltip: 'Name that identifies this machine in your account or mining pool.',
+        cpuLabel: 'CPU',
+        cpuTooltip: 'Processor model that is performing the mining work.',
+        algoLabel: 'Algorithm',
+        algoTooltip: 'Specific math formula used to mine this coin (e.g., rx/0 for Monero).',
+        poolLabel: 'Pool',
+        poolTooltip: 'Collective server where multiple miners join to increase payout frequency.',
+        pingLabel: 'Ping',
+        pingTooltip: 'Connection latency. Response time between you and the pool. Lower is better.',
+        hugePagesLabel: 'Huge Pages',
+        hugePagesTooltip: 'Advanced memory optimization. If it is 100%, your mining speed increases a lot.',
+        footerBy: 'Built by',
+        exportEmptyAlert: 'No readings available to export.',
+        notAvailable: 'Not available',
+        hashrate10sDataset: 'Hashrate (10s)',
+        hashrate60sDataset: 'Hashrate (60s)',
+        hashrate15mDataset: 'Hashrate (15m)',
+        sharesAcceptedDataset: 'Accepted',
+        sharesTotalDataset: 'Total'
+    }
+};
+
+let currentLang = localStorage.getItem(STORAGE_KEY_LANGUAGE) || DEFAULT_LANG;
+let statusState = 'connecting';
 
 const PARTICLE_COLOR = 'rgba(16, 185, 129, 0.55)';
 
@@ -28,6 +136,57 @@ let exportHistory = [];
 // --- Chart Defaults ---
 Chart.defaults.color = '#64748b';
 Chart.defaults.font.family = 'ui-sans-serif, system-ui, sans-serif';
+
+function t(key) {
+    return translations[currentLang]?.[key] || translations[DEFAULT_LANG][key] || key;
+}
+
+function getLocale() {
+    return currentLang === 'pt-BR' ? 'pt-BR' : 'en-US';
+}
+
+function setStatus(state) {
+    statusState = state;
+    const statusEl = document.getElementById('statusText');
+    if (!statusEl) return;
+    if (state === 'online') statusEl.textContent = t('statusOnline');
+    else if (state === 'offline') statusEl.textContent = t('statusOffline');
+    else statusEl.textContent = t('statusConnecting');
+}
+
+function applyLanguage(lang) {
+    currentLang = translations[lang] ? lang : DEFAULT_LANG;
+    document.documentElement.lang = currentLang;
+
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.getAttribute('data-i18n');
+        if (!key) return;
+        el.textContent = t(key);
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (!key) return;
+        el.setAttribute('placeholder', t(key));
+    });
+
+    hashrateChart.data.datasets[0].label = t('hashrate10sDataset');
+    hashrateChart.data.datasets[1].label = t('hashrate60sDataset');
+    hashrateChart.data.datasets[2].label = t('hashrate15mDataset');
+    sharesPie.data.labels = [t('sharesAccepted'), t('sharesRejected')];
+    sharesHistoryChart.data.datasets[0].label = t('sharesAcceptedDataset');
+    sharesHistoryChart.data.datasets[1].label = t('sharesTotalDataset');
+
+    hashrateChart.update('none');
+    sharesPie.update();
+    sharesHistoryChart.update('none');
+    setStatus(statusState);
+}
+
+function setLanguage(lang) {
+    localStorage.setItem(STORAGE_KEY_LANGUAGE, lang);
+    applyLanguage(lang);
+}
 
 const commonOptions = {
     responsive: true,
@@ -372,7 +531,7 @@ function downloadCsvFile(csvContent) {
 
 function exportAllReadingsCsv() {
     if (!exportHistory.length) {
-        alert('Nenhuma leitura disponível para exportar.');
+        alert(t('exportEmptyAlert'));
         return;
     }
     const csv = buildCsvContent(exportHistory);
@@ -394,7 +553,7 @@ async function fetchData() {
         // UI Status
         document.getElementById('statusBadge').classList.replace('border-gray-700', 'border-emerald-500/50');
         document.querySelector('.status-dot').classList.add('status-ok');
-        document.getElementById('statusText').textContent = 'Online';
+        setStatus('online');
         document.getElementById('statusText').classList.add('text-emerald-400');
 
         // Dados
@@ -445,14 +604,14 @@ async function fetchData() {
             hpEl.textContent = `${hpUsed}/${hpTotal} (${pct}%)`;
             hpEl.className = 'font-mono text-yellow-400';
         } else {
-            hpEl.textContent = 'Não disponível';
+            hpEl.textContent = t('notAvailable');
             hpEl.className = 'font-mono text-red-400';
         }
 
-        const now = new Date().toLocaleTimeString('pt-BR');
+        const now = new Date().toLocaleTimeString(getLocale());
         exportHistory.push({
             timestamp: new Date().toISOString(),
-            timeLocal: new Date().toLocaleString('pt-BR'),
+            timeLocal: new Date().toLocaleString(getLocale()),
             hashrate10s: hrArray[0],
             hashrate60s: hrArray[1],
             hashrate15m: hrArray[2],
@@ -518,7 +677,7 @@ async function fetchData() {
         console.error(err);
         document.querySelector('.status-dot').classList.remove('status-ok');
         document.querySelector('.status-dot').classList.add('status-error');
-        document.getElementById('statusText').textContent = 'Offline';
+        setStatus('offline');
         document.getElementById('statusText').classList.replace('text-emerald-400', 'text-red-400');
     }
 }
@@ -557,8 +716,18 @@ document.getElementById('clearHistoryBtn').onclick = () => {
 const exportBtn = document.getElementById('exportCsvBtn');
 if (exportBtn) exportBtn.onclick = exportAllReadingsCsv;
 
+const languageToggleBtn = document.getElementById('languageToggle');
+if (languageToggleBtn) {
+    languageToggleBtn.onclick = () => {
+        const nextLang = currentLang === 'pt-BR' ? 'en-US' : 'pt-BR';
+        setLanguage(nextLang);
+    };
+}
+
 initParticles();
 loadHistory();
 loadExportHistory();
+applyLanguage(currentLang);
+setStatus(statusState);
 fetchData();
 fetchTimer = setInterval(fetchData, settings.refreshInterval);
