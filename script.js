@@ -1,5 +1,6 @@
 const STORAGE_KEY_SETTINGS = 'DDP_CryptoMinerPulseSettings_1';
 const STORAGE_KEY_DATA = 'DDP_CryptoMinerPulseData_1';
+const STORAGE_KEY_EXPORT = 'DDP_CryptoMinerPulseExport_1';
 const MAX_DATA_POINTS = 60;
 const SHARES_UPDATE_INTERVAL = 3 * 60 * 1000;
 
@@ -22,6 +23,7 @@ let lastSharesUpdate = 0; // Marca quando foi a última atualização dos shares
 let lastPulseAt = 0;
 let lastHashrate = null;
 let particleColor = PARTICLE_COLOR;
+let exportHistory = [];
 
 // --- Chart Defaults ---
 Chart.defaults.color = '#64748b';
@@ -304,6 +306,79 @@ function saveHistory() {
     localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(data));
 }
 
+function loadExportHistory() {
+    const raw = localStorage.getItem(STORAGE_KEY_EXPORT);
+    if (!raw) return;
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) exportHistory = parsed;
+    } catch (e) {
+        console.warn('Histórico de exportação inválido');
+    }
+}
+
+function saveExportHistory() {
+    localStorage.setItem(STORAGE_KEY_EXPORT, JSON.stringify(exportHistory));
+}
+
+function csvEscape(value) {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+    return str;
+}
+
+function buildCsvContent(rows) {
+    const columns = [
+        { key: 'timestamp', label: 'timestamp_iso' },
+        { key: 'timeLocal', label: 'timestamp_local' },
+        { key: 'hashrate10s', label: 'hashrate_10s' },
+        { key: 'hashrate60s', label: 'hashrate_60s' },
+        { key: 'hashrate15m', label: 'hashrate_15m' },
+        { key: 'sharesGood', label: 'shares_good' },
+        { key: 'sharesTotal', label: 'shares_total' },
+        { key: 'sharesRejected', label: 'shares_rejected' },
+        { key: 'avgShareTime', label: 'avg_share_time_s' },
+        { key: 'diffCurrent', label: 'diff_current' },
+        { key: 'uptime', label: 'uptime_s' },
+        { key: 'workerId', label: 'worker_id' },
+        { key: 'algo', label: 'algo' },
+        { key: 'pool', label: 'pool' },
+        { key: 'ping', label: 'ping_ms' },
+        { key: 'cpuBrand', label: 'cpu_brand' },
+        { key: 'hugePagesUsed', label: 'hugepages_used' },
+        { key: 'hugePagesTotal', label: 'hugepages_total' }
+    ];
+    const lines = [columns.map(col => col.label).join(',')];
+    for (const row of rows) {
+        lines.push(columns.map(col => csvEscape(row[col.key])).join(','));
+    }
+    return lines.join('\n');
+}
+
+function downloadCsvFile(csvContent) {
+    const fileStamp = new Date().toISOString().replace(/[:]/g, '-');
+    const filename = `crypto-miner-pulse-${fileStamp}.csv`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function exportAllReadingsCsv() {
+    if (!exportHistory.length) {
+        alert('Nenhuma leitura disponível para exportar.');
+        return;
+    }
+    const csv = buildCsvContent(exportHistory);
+    downloadCsvFile(csv);
+}
+
 // --- Fetch & Update Loop ---
 
 async function fetchData() {
@@ -375,6 +450,27 @@ async function fetchData() {
         }
 
         const now = new Date().toLocaleTimeString('pt-BR');
+        exportHistory.push({
+            timestamp: new Date().toISOString(),
+            timeLocal: new Date().toLocaleString('pt-BR'),
+            hashrate10s: hrArray[0],
+            hashrate60s: hrArray[1],
+            hashrate15m: hrArray[2],
+            sharesGood: sGood,
+            sharesTotal: sTotal,
+            sharesRejected: sBad,
+            avgShareTime: sAvgTime,
+            diffCurrent: json.results?.diff_current || 0,
+            uptime: json.uptime || 0,
+            workerId: json.worker_id || '',
+            algo: json.algo || '',
+            pool: json.connection?.pool || '',
+            ping: json.connection?.ping || 0,
+            cpuBrand: json.cpu?.brand || '',
+            hugePagesUsed: hpUsed,
+            hugePagesTotal: hpTotal
+        });
+        saveExportHistory();
 
         // --- Atualização Gráfico Hashrate ---
         hashrateChart.data.labels.push(now);
@@ -454,10 +550,15 @@ document.getElementById('saveSettingsBtn').onclick = () => {
 };
 document.getElementById('clearHistoryBtn').onclick = () => {
     localStorage.removeItem(STORAGE_KEY_DATA);
+    localStorage.removeItem(STORAGE_KEY_EXPORT);
     location.reload();
 };
 
+const exportBtn = document.getElementById('exportCsvBtn');
+if (exportBtn) exportBtn.onclick = exportAllReadingsCsv;
+
 initParticles();
 loadHistory();
+loadExportHistory();
 fetchData();
 fetchTimer = setInterval(fetchData, settings.refreshInterval);
