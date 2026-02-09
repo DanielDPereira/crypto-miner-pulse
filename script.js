@@ -8,6 +8,8 @@ let settings = {
     refreshInterval: 3000
 };
 
+const PARTICLE_COLOR = 'rgba(16, 185, 129, 0.55)';
+
 // Carregar definições salvas
 const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
 if (savedSettings) {
@@ -17,6 +19,9 @@ if (savedSettings) {
 
 let fetchTimer = null;
 let lastSharesUpdate = 0; // Marca quando foi a última atualização dos shares
+let lastPulseAt = 0;
+let lastHashrate = null;
+let particleColor = PARTICLE_COLOR;
 
 // --- Chart Defaults ---
 Chart.defaults.color = '#64748b';
@@ -145,6 +150,70 @@ const sharesHistoryChart = new Chart(sharesHistCtx, {
     options: commonOptions
 });
 
+// --- Particulas ---
+
+let particleCanvas = null;
+let particleCtx = null;
+let particles = [];
+const PARTICLE_COUNT = 60;
+
+function resizeParticles() {
+    if (!particleCanvas) return;
+    particleCanvas.width = window.innerWidth;
+    particleCanvas.height = window.innerHeight;
+}
+
+function seedParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i += 1) {
+        particles.push({
+            x: Math.random() * particleCanvas.width,
+            y: Math.random() * particleCanvas.height,
+            r: Math.random() * 2.6 + 0.6,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            alpha: Math.random() * 0.6 + 0.2
+        });
+    }
+}
+
+function animateParticles() {
+    if (!particleCtx) return;
+    particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+    particleCtx.fillStyle = particleColor;
+    for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < -20) p.x = particleCanvas.width + 20;
+        if (p.x > particleCanvas.width + 20) p.x = -20;
+        if (p.y < -20) p.y = particleCanvas.height + 20;
+        if (p.y > particleCanvas.height + 20) p.y = -20;
+
+        particleCtx.globalAlpha = p.alpha;
+        particleCtx.beginPath();
+        particleCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        particleCtx.fill();
+    }
+    particleCtx.globalAlpha = 1;
+    requestAnimationFrame(animateParticles);
+}
+
+function initParticles() {
+    particleCanvas = document.createElement('canvas');
+    particleCanvas.id = 'particleCanvas';
+    particleCanvas.className = 'particle-layer';
+    document.body.appendChild(particleCanvas);
+    particleCtx = particleCanvas.getContext('2d');
+    resizeParticles();
+    seedParticles();
+    window.addEventListener('resize', () => {
+        resizeParticles();
+        seedParticles();
+    });
+    requestAnimationFrame(animateParticles);
+}
+
 // --- Funções UI ---
 
 function formatHashrate(h) {
@@ -160,6 +229,16 @@ function formatUptime(seconds) {
     const h = Math.floor((seconds % 86400) / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     return `${d > 0 ? d + 'd ' : ''}${h}h ${m}m`;
+}
+
+function triggerPulse(targetEl) {
+    if (!targetEl) return;
+    const now = Date.now();
+    if (now - lastPulseAt < 650) return;
+    lastPulseAt = now;
+    targetEl.classList.remove('pulse-flash');
+    void targetEl.offsetWidth;
+    targetEl.classList.add('pulse-flash');
 }
 
 // Toggle das linhas do gráfico Hashrate
@@ -251,7 +330,8 @@ async function fetchData() {
         const sAvgTime = json.results?.avg_time || 0; 
         
         // Atualizar Textos
-        document.getElementById('hashrate10s').textContent = formatHashrate(hrArray[0]);
+        const hashrateText = formatHashrate(hrArray[0]);
+        document.getElementById('hashrate10s').textContent = hashrateText;
         document.getElementById('sharesGood').textContent = sGood.toLocaleString();
         document.getElementById('sharesRejected').textContent = sBad.toLocaleString();
         document.getElementById('avgShareTime').textContent = sAvgTime + 's';
@@ -307,6 +387,12 @@ async function fetchData() {
             hashrateChart.data.datasets.forEach(d => d.data.shift());
         }
         hashrateChart.update('none');
+
+        if (lastHashrate !== hrArray[0]) {
+            const card = document.getElementById('hashrate10s')?.closest('.glass-panel');
+            triggerPulse(card);
+            lastHashrate = hrArray[0];
+        }
 
         // --- Atualização Gráfico Shares ---
         const currentTime = Date.now();
@@ -371,6 +457,7 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     location.reload();
 };
 
+initParticles();
 loadHistory();
 fetchData();
 fetchTimer = setInterval(fetchData, settings.refreshInterval);
