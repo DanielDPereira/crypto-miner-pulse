@@ -72,6 +72,7 @@ Para começar a monitorar agora mesmo, siga estes passos:
 
 
 *(Dica: Use host `0.0.0.0` para permitir o acesso de outros dispositivos na mesma rede).*
+
 2. **Acesse o Dashboard:** Clique no link abaixo:
 👉 **[https://danieldpereira.github.io/crypto-miner-pulse/](https://danieldpereira.github.io/crypto-miner-pulse/)**
 3. **Conecte:** Clique no ícone de engrenagem ⚙️ e insira o endereço IP da sua máquina (ex: `http://192.168.1.10:20100/2/summary`).
